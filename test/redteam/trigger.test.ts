@@ -281,16 +281,16 @@ describe('blocked: S-46 (the key does not leave the credential origin)', () => {
 			handler: () => ({}),
 			credentials: { apiKey: 'syn_x', baseUrl: 'http://api.synergyconnect.com.br' },
 		});
-		await expect(createHook(ctx)).rejects.toThrow('The Synergy API URL must use https.');
+		await expect(createHook(ctx)).rejects.toThrow('The Synergy Connect API URL must use https.');
 		expect(calls).toHaveLength(0);
 	});
 
-	it('blocked: S-46 a legacy credential → error before any call', async () => {
+	it('blocked: S-46 a credential whose Base URL has a path → error before any call', async () => {
 		const { ctx, calls } = hookContext({
 			handler: () => ({}),
-			credentials: { apiKey: 'syn_x', baseUrl: 'https://legacy.synergyconnect.com.br/api/v1' },
+			credentials: { apiKey: 'syn_x', baseUrl: 'https://synergyconnect.com.br/api/v1' },
 		});
-		await expect(createHook(ctx)).rejects.toThrow(/legacy Synergy API/);
+		await expect(createHook(ctx)).rejects.toThrow(/with no path/);
 		expect(calls).toHaveLength(0);
 	});
 

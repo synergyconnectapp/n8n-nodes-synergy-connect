@@ -31,7 +31,7 @@ export const phoneNumberField: INodeProperties = {
 			validation: [
 				{
 					type: 'regex',
-					properties: { regex: '^[0-9]{5,25}$', errorMessage: 'The ID must be only digits (5 to 25).' },
+					properties: { regex: '^[0-9]{5,20}$', errorMessage: 'The ID must be only digits (5 to 20).' },
 				},
 			],
 		},

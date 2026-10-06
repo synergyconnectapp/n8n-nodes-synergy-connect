@@ -35,6 +35,7 @@ export const EVENT_LABELS: Record<string, string> = {
 	group_lifecycle_update: 'Group Lifecycle',
 	group_participant_update: 'Group Participants',
 	group_settings_update: 'Group Settings',
+	synergy_journeys: 'Journey Event',
 	synergy_onboarding: 'Onboarding Result',
 	calls: 'Calls',
 	history: 'History',

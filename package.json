@@ -1,6 +1,6 @@
 {
 	"name": "@synergyconnectapp/n8n-nodes-synergy-connect",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "n8n community nodes for Synergy Connect: WhatsApp messages, media, templates, flows and webhooks",
 	"keywords": [
 		"n8n-community-node-package",
@@ -43,6 +43,7 @@
 		"lintfix": "n8n-node lint --fix",
 		"release": "n8n-node release",
 		"test": "vitest run",
+		"test:contract": "vitest run test/contract.test.ts",
 		"prepublishOnly": "n8n-node prerelease"
 	},
 	"n8n": {

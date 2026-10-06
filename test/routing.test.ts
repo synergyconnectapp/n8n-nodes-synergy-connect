@@ -118,9 +118,9 @@ describe('output routing', () => {
 		).toEqual({ kind: 'items' });
 	});
 
-	it('echo, conversation and group events become one item per element', () => {
+	it('echo, conversation, journey and group events become one item per element', () => {
 		const config: RoutingConfig = {
-			events: ['smb_message_echoes', 'synergy_conversations', 'group_lifecycle_update'],
+			events: ['smb_message_echoes', 'synergy_conversations', 'synergy_journeys', 'group_lifecycle_update'],
 			mode: 'perEventType',
 			statuses: [],
 		};
@@ -129,10 +129,14 @@ describe('output routing', () => {
 			envelopeOf(
 				{ field: 'smb_message_echoes', value: { message_echoes: [{ id: 'a' }, { id: 'b' }] } },
 				{ field: 'synergy_conversations', value: { conversations: [{ wa_id: '1', status: 'open' }] } },
+				{
+					field: 'synergy_journeys',
+					value: { journeys: [{ event: 'run.started', run_id: 1 }, { event: 'run.completed', run_id: 1 }] },
+				},
 				{ field: 'group_lifecycle_update', value: { group_id: 'g' } },
 			),
 		);
-		expect(counts).toEqual({ 'Message Echo': 2, 'Conversation Status': 1, 'Group Lifecycle': 1 });
+		expect(counts).toEqual({ 'Message Echo': 2, 'Conversation Status': 1, 'Journey Event': 2, 'Group Lifecycle': 1 });
 	});
 
 	it('the subtype of a message has a branch in the list of subtypes', () => {

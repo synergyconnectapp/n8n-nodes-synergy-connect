@@ -1,6 +1,6 @@
 import type { IDataObject, IExecuteFunctions } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
-import { DEFAULT_GRAPH_VERSION, apiRequest, pathPart } from '../transport';
+import { DEFAULT_GRAPH_VERSION, GRAPH_VERSION_PATTERN, apiRequest, pathPart } from '../transport';
 
 export type Getter = (name: string, fallback?: unknown) => unknown;
 
@@ -172,7 +172,7 @@ export async function postMessage(
 ): Promise<IDataObject> {
 	const options = ctx.getNodeParameter('messageOptions', i, {}) as IDataObject;
 	const version = String(options.graphApiVersion || DEFAULT_GRAPH_VERSION);
-	if (!/^v\d+\.\d+$/.test(version)) {
+	if (!GRAPH_VERSION_PATTERN.test(version)) {
 		throw new NodeOperationError(ctx.getNode(), 'Graph API Version must look like v25.0', { itemIndex: i });
 	}
 	const response = await apiRequest(ctx, {

@@ -50,7 +50,7 @@ export async function handleFlow(
 		})
 	).body as IDataObject;
 	if (typeof token.flow_token !== 'string' || !token.flow_token) {
-		throw new NodeOperationError(ctx.getNode(), 'Synergy did not return a flow token.', { itemIndex: i });
+		throw new NodeOperationError(ctx.getNode(), 'Synergy Connect did not return a flow token.', { itemIndex: i });
 	}
 
 	const parameters: IDataObject = {

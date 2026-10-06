@@ -30,6 +30,7 @@ const isObject = (value: unknown): value is IDataObject =>
 function elementsOf(field: string, value: IDataObject): IDataObject[] {
 	if (field === 'smb_message_echoes' && Array.isArray(value.message_echoes)) return asArray(value.message_echoes);
 	if (field === 'synergy_conversations' && Array.isArray(value.conversations)) return asArray(value.conversations);
+	if (field === 'synergy_journeys' && Array.isArray(value.journeys)) return asArray(value.journeys);
 	if (field === 'calls' && Array.isArray(value.calls)) return asArray(value.calls);
 	return [value];
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SynergyConnectV1 } from '../nodes/SynergyConnect/v1/SynergyConnectV1.node';
 import { buildMessageBody } from '../nodes/SynergyConnect/v1/actions/message';
 import { buildTemplateComponents } from '../nodes/SynergyConnect/v1/actions/template';
-import { isLegacyBase } from '../nodes/SynergyConnect/v1/transport';
+import { resolveBaseUrl } from '../nodes/SynergyConnect/v1/transport';
 import { CREDENTIALS, executeContext } from './helpers';
 
 const node = new SynergyConnectV1({
@@ -22,11 +22,14 @@ const getter = (params: Record<string, unknown>) => (name: string, fallback?: un
 
 describe('the node refuses a credential before any call (S-46, E1-4)', () => {
 	const cases: [string, RegExp][] = [
-		['https://legacy.synergyconnect.com.br/api/v1', /legacy Synergy API/],
-		['https://synergyconnect.com.br/api/v1', /legacy Synergy API/],
+		['https://synergyconnect.com.br/api/v1', /with no path/],
+		['https://api.synergyconnect.com.br/v1', /with no path/],
+		['https://api.synergyconnect.com.br/?key=1', /with no path/],
+		['https://api.synergyconnect.com.br/#v1', /with no path/],
 		['http://api.synergyconnect.com.br', /must use https/],
 		['https://user:pass@api.synergyconnect.com.br', /user name or password/],
 		['ftp://api.synergyconnect.com.br', /must use https/],
+		['api.synergyconnect.com.br', /not a valid URL/],
 	];
 	for (const [baseUrl, message] of cases) {
 		it(baseUrl, async () => {
@@ -40,10 +43,11 @@ describe('the node refuses a credential before any call (S-46, E1-4)', () => {
 		});
 	}
 
-	it('isLegacyBase', () => {
-		expect(isLegacyBase('https://legacy.synergyconnect.com.br/api/v1')).toBe(true);
-		expect(isLegacyBase(BASE)).toBe(false);
-		expect(isLegacyBase('https://api.synergyconnect.com.br/v1')).toBe(false);
+	it('resolveBaseUrl answers the origin: the default, a trailing slash, another host of the API', () => {
+		const resolve = (baseUrl: string) => resolveBaseUrl({ name: 'n' } as never, { baseUrl });
+		expect(resolve('')).toBe(BASE);
+		expect(resolve(` ${BASE}/ `)).toBe(BASE);
+		expect(resolve('https://api-staging.synergyconnect.com.br')).toBe('https://api-staging.synergyconnect.com.br');
 	});
 
 	it('an empty Base URL falls back to the default host', async () => {

@@ -34,7 +34,7 @@ export function readHooks(staticData: IDataObject): Record<string, HookEntry> {
 const PRIVATE_V4 =
 	/^(0\.|10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.)/;
 
-// Synergy refuses these too, but only answers "the URL must be a public address".
+// The API refuses these too, but only answers "the URL must be a public address".
 export function assertPublicHttpsUrl(ctx: IHookFunctions, url: string): void {
 	const node = ctx.getNode();
 	let parsed: URL;
@@ -60,7 +60,7 @@ export function assertPublicHttpsUrl(ctx: IHookFunctions, url: string): void {
 		/^f[cd][0-9a-f]{2}:/.test(host) ||
 		/^fe[89ab][0-9a-f]:/.test(host)
 	) {
-		throw new NodeOperationError(node, 'The webhook URL of n8n points to a private address: Synergy cannot reach it.', {
+		throw new NodeOperationError(node, 'The webhook URL of n8n points to a private address: Synergy Connect cannot reach it.', {
 			description: `n8n would receive events at ${url}. Set the WEBHOOK_URL environment variable of n8n to a public https address (a tunnel works for tests).`,
 		});
 	}
@@ -153,12 +153,12 @@ export async function checkExists(ctx: IHookFunctions, wait = sleep): Promise<bo
 	if (typeof row.name === 'string' && row.name.startsWith(NAME_PREFIX)) {
 		const rotated = await managed(
 			ctx,
-			{ method: 'POST', path: `/v1/webhooks/${pathPart(row.id)}/rotate-secret`, body: {} },
+			{ method: 'POST', path: `/v1/webhooks/${pathPart(row.id)}/rotate-secret` },
 			wait,
 		);
 		const secret = (rotated.body as IDataObject).secret;
 		if (typeof secret !== 'string' || !secret) {
-			throw new NodeOperationError(ctx.getNode(), 'Synergy did not return the new webhook secret.');
+			throw new NodeOperationError(ctx.getNode(), 'Synergy Connect did not return the new webhook secret.');
 		}
 		hooks[url] = { id: row.id, secret };
 		await syncSubscription(ctx, row, wait);
@@ -167,7 +167,10 @@ export async function checkExists(ctx: IHookFunctions, wait = sleep): Promise<bo
 	throw new NodeOperationError(
 		ctx.getNode(),
 		'A webhook for this n8n URL already exists and was not created by n8n.',
-		{ description: 'Delete it in Settings → Developer → Webhooks, then activate the workflow again.' },
+		{
+			description:
+				'Delete it in the Synergy Connect app (Configurações → API e webhooks → Webhooks), then activate the workflow again.',
+		},
 	);
 }
 
@@ -175,7 +178,7 @@ export async function createHook(ctx: IHookFunctions, wait = sleep): Promise<boo
 	const url = ctx.getNodeWebhookUrl('default') as string;
 	assertPublicHttpsUrl(ctx, url);
 	const hooks = hooksOf(ctx);
-	// Synergy proves the URL with a signed ping DURING this call, before we know the secret: no stale entry may stand
+	// The API proves the URL with a signed ping DURING this call, before we know the secret: no stale entry may stand
 	// in for it (the node answers that ping without running the workflow).
 	delete hooks[url];
 
@@ -199,7 +202,7 @@ export async function createHook(ctx: IHookFunctions, wait = sleep): Promise<boo
 	const body = response.body as IDataObject;
 	const id = (body.row as IDataObject | undefined)?.id;
 	if (typeof id !== 'string' || typeof body.secret !== 'string' || !body.secret) {
-		throw new NodeOperationError(ctx.getNode(), 'Synergy did not return the webhook id and secret.');
+		throw new NodeOperationError(ctx.getNode(), 'Synergy Connect did not return the webhook id and secret.');
 	}
 	hooks[url] = { id, secret: body.secret };
 	return true;

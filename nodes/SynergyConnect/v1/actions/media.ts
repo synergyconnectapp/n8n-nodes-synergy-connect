@@ -1,12 +1,12 @@
 import type { IDataObject, IExecuteFunctions } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
-import { DEFAULT_GRAPH_VERSION, apiRequest, pathPart } from '../transport';
+import { DEFAULT_GRAPH_VERSION, GRAPH_VERSION_PATTERN, apiRequest, pathPart } from '../transport';
 import { WithBinary, type ActionResult } from './result';
 
 function graphVersion(ctx: IExecuteFunctions, i: number): string {
 	const options = ctx.getNodeParameter('mediaOptions', i, {}) as IDataObject;
 	const version = String(options.graphApiVersion || DEFAULT_GRAPH_VERSION);
-	if (!/^v\d+\.\d+$/.test(version)) {
+	if (!GRAPH_VERSION_PATTERN.test(version)) {
 		throw new NodeOperationError(ctx.getNode(), 'Graph API Version must look like v25.0', { itemIndex: i });
 	}
 	return version;

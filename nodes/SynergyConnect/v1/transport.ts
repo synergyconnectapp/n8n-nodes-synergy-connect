@@ -14,9 +14,13 @@ import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 export const DEFAULT_BASE_URL = 'https://api.synergyconnect.com.br';
 export const DEFAULT_GRAPH_VERSION = 'v25.0';
 
-export const LEGACY_BASE_MESSAGE =
-	'This credential points to the legacy Synergy API, which is a different platform. Create a syn_… key in Settings → Developer and set the credential Base URL to https://api.synergyconnect.com.br.';
-export const HTTPS_ONLY_MESSAGE = 'The Synergy API URL must use https.';
+// The patterns of the path parameters, as the OpenAPI of the API declares them (GraphVersion, PhoneNumberId).
+export const GRAPH_VERSION_PATTERN = /^v\d{1,3}\.\d{1,2}$/;
+export const PHONE_NUMBER_ID_PATTERN = /^\d{5,20}$/;
+
+export const HTTPS_ONLY_MESSAGE = 'The Synergy Connect API URL must use https.';
+export const BASE_URL_PATH_MESSAGE =
+	'The Base URL of the credential must be only the address of the Synergy Connect API, with no path: https://api.synergyconnect.com.br. The node adds the route itself.';
 
 type Ctx = IExecuteFunctions | IHookFunctions | ILoadOptionsFunctions;
 
@@ -28,37 +32,28 @@ export interface ApiResponse {
 	body: unknown;
 }
 
-// The legacy host kept its API under `legacy.` (and `/api/v1`); it never speaks the new routes.
-export function isLegacyBase(baseUrl: string): boolean {
-	const text = baseUrl.trim();
-	if (/^https?:\/\/legacy\./i.test(text)) return true;
-	try {
-		return /^\/api(\/|$)/i.test(new URL(text).pathname);
-	} catch {
-		return false;
-	}
-}
-
-// S-46 (K-08): the checks run BEFORE any request, so the key never goes to a legacy or cleartext address.
+// S-46 (K-08): the checks run BEFORE any request, so the key only ever goes to an https origin of the API. The API
+// has one host per environment and its routes start at the root (`/v1/…`, `/{graph version}/…`), so a Base URL with
+// a path, a query or a fragment is not an address of this API.
 export function resolveBaseUrl(node: INode, credentials: ICredentialDataDecryptedObject): string {
 	const raw = typeof credentials.baseUrl === 'string' ? credentials.baseUrl.trim() : '';
 	const baseUrl = raw || DEFAULT_BASE_URL;
-	if (isLegacyBase(baseUrl)) {
-		throw new NodeOperationError(node, LEGACY_BASE_MESSAGE);
-	}
 	let url: URL;
 	try {
 		url = new URL(baseUrl);
 	} catch {
-		throw new NodeOperationError(node, 'The Synergy API URL is not a valid URL.');
+		throw new NodeOperationError(node, 'The Synergy Connect API URL is not a valid URL.');
 	}
 	if (url.protocol !== 'https:') {
 		throw new NodeOperationError(node, HTTPS_ONLY_MESSAGE);
 	}
 	if (url.username || url.password) {
-		throw new NodeOperationError(node, 'The Synergy API URL must not contain a user name or password.');
+		throw new NodeOperationError(node, 'The Synergy Connect API URL must not contain a user name or password.');
 	}
-	return `${url.origin}${url.pathname.replace(/\/+$/, '')}`;
+	if (url.pathname.replace(/\/+$/, '') !== '' || url.search || url.hash) {
+		throw new NodeOperationError(node, BASE_URL_PATH_MESSAGE);
+	}
+	return url.origin;
 }
 
 function errorText(body: unknown): { message?: string; code?: number } {
@@ -91,7 +86,7 @@ export function describeError(
 	hints: ErrorHints = {},
 ): { message: string; description: string } {
 	const { message: apiMessage, code } = errorText(body);
-	const detail = apiMessage ? ` Synergy said: ${apiMessage}` : '';
+	const detail = apiMessage ? ` Synergy Connect said: ${apiMessage}` : '';
 	const scopeText =
 		scope === 'management'
 			? 'the "management" scope (webhooks and writing templates)'
@@ -99,8 +94,8 @@ export function describeError(
 
 	if (status === 401) {
 		return {
-			message: 'Synergy rejected the API key (401)',
-			description: `The key is invalid, revoked, or does not have ${scopeText}. After a 403 the API also answers 401 for the next 60 seconds. Create a key in Settings → Developer with the messages and management scopes.${detail}`,
+			message: 'Synergy Connect rejected the API key (401)',
+			description: `The key is invalid, revoked, or does not have ${scopeText}. After a 403 the API also answers 401 for the next 60 seconds. Create a key in the Synergy Connect app (Configurações → API e webhooks) with the messages and management scopes.${detail}`,
 		};
 	}
 	if (status === 403) {
@@ -110,23 +105,23 @@ export function describeError(
 		if (code !== undefined && PLAN_CODES.has(code)) {
 			return {
 				message: 'The plan or the account does not allow this operation (403)',
-				description: `Check the plan (the API, the inbox and WhatsApp Flows are plan features) and the account status in Settings → Plano e uso.${detail}`,
+				description: `Check the plan (the API, the inbox and WhatsApp Flows are plan features) and the account status in the Synergy Connect app (Configurações → Plano e uso).${detail}`,
 			};
 		}
 		return {
-			message: 'Synergy refused the operation (403)',
+			message: 'Synergy Connect refused the operation (403)',
 			description: `The key probably lacks ${scopeText}, or it cannot reach this number. After a 403 the API answers 401 for the next 60 seconds.${detail}`,
 		};
 	}
 	if (status === 429) {
 		const wait = headers['retry-after'];
 		return {
-			message: 'Synergy rate limit reached (429)',
+			message: 'Synergy Connect rate limit reached (429)',
 			description: `${wait ? `Try again in ${wait} seconds (Retry-After). ` : ''}Slow the workflow down or add a Wait node.${detail}`,
 		};
 	}
 	return {
-		message: apiMessage ?? `Synergy answered HTTP ${status}`,
+		message: apiMessage ?? `Synergy Connect answered HTTP ${status}`,
 		description: apiMessage ? `HTTP ${status}` : '',
 	};
 }
@@ -183,7 +178,7 @@ export async function apiRequest(ctx: Ctx, options: RequestOptions): Promise<Api
 		const { message, description } =
 			response.statusCode < 400
 				? {
-						message: `Synergy answered with a redirect (${response.statusCode}); the request was not followed`,
+						message: `Synergy Connect answered with a redirect (${response.statusCode}); the request was not followed`,
 						description: 'Check the Base URL of the credential.',
 					}
 				: describeError(response.statusCode, body, headers, options.scope, options.hints);
@@ -224,8 +219,8 @@ export async function resolvePhoneNumberId(ctx: IExecuteFunctions | ILoadOptions
 			{ itemIndex },
 		);
 	}
-	if (!/^\d{5,25}$/.test(value)) {
-		throw new NodeOperationError(ctx.getNode(), 'The Phone Number ID must be only digits.', { itemIndex });
+	if (!PHONE_NUMBER_ID_PATTERN.test(value)) {
+		throw new NodeOperationError(ctx.getNode(), 'The Phone Number ID must be 5 to 20 digits.', { itemIndex });
 	}
 	return value;
 }

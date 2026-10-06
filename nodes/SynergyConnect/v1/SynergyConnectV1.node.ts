@@ -59,7 +59,7 @@ export class SynergyConnectV1 {
 	};
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-		// S-46: a legacy or cleartext Base URL stops here, before any request carries the key
+		// S-46: a Base URL that is not an https origin stops here, before any request carries the key
 		resolveBaseUrl(this.getNode(), await this.getCredentials('synergyConnectApi'));
 
 		const items = this.getInputData();

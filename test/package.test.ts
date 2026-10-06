@@ -6,6 +6,11 @@ import { SynergyConnectTrigger } from '../nodes/SynergyConnectTrigger/SynergyCon
 import actionCodex from '../nodes/SynergyConnect/SynergyConnect.node.json';
 import triggerCodex from '../nodes/SynergyConnectTrigger/SynergyConnectTrigger.node.json';
 import pkg from '../package.json';
+import lock from '../package-lock.json';
+import tsconfig from '../tsconfig.json';
+import actionIcon from '../nodes/SynergyConnect/synergyConnect.svg?raw';
+import triggerIcon from '../nodes/SynergyConnectTrigger/synergyConnect.svg?raw';
+import changelog from '../CHANGELOG.md?raw';
 import publishWorkflow from '../.github/workflows/publish.yml?raw';
 
 describe('VersionedNodeType (devtools.md §6.1)', () => {
@@ -29,6 +34,20 @@ describe('VersionedNodeType (devtools.md §6.1)', () => {
 		expect(triggerCodex.nodeVersion).toBe('1.0');
 		expect(actionCodex.node).toBe('@synergyconnectapp/n8n-nodes-synergy-connect.synergyConnect');
 		expect(triggerCodex.node).toBe('@synergyconnectapp/n8n-nodes-synergy-connect.synergyConnectTrigger');
+	});
+
+	it('the codex of both nodes links to the developers site of Synergy Connect', () => {
+		for (const codex of [actionCodex, triggerCodex]) {
+			expect(codex.categories).toEqual(['Communication']);
+			expect(codex.resources.primaryDocumentation).toEqual([{ url: 'https://synergyconnect.com.br/developers/n8n' }]);
+			expect(codex.resources.credentialDocumentation).toEqual([
+				{ url: 'https://synergyconnect.com.br/developers/authentication' },
+			]);
+		}
+	});
+
+	it('the codex files are part of the build (n8n reads them next to the node in dist)', () => {
+		expect(tsconfig.include).toContain('nodes/**/*.node.json');
 	});
 
 	it('has Template and Send Flow', () => {
@@ -70,16 +89,24 @@ describe('credential synergyConnectApi (§6.2)', () => {
 		expect(fields.phoneNumberId.required).toBeFalsy();
 	});
 
-	it('sends both Authorization: Bearer and x-api-key', () => {
+	it('sends the key in Authorization: Bearer and in no other header', () => {
 		expect(credential.authenticate).toEqual({
 			type: 'generic',
 			properties: {
 				headers: {
 					Authorization: '=Bearer {{$credentials.apiKey}}',
-					'x-api-key': '={{$credentials.apiKey}}',
 				},
 			},
 		});
+	});
+
+	it('the help points at the developers site of Synergy Connect', () => {
+		expect(credential.documentationUrl).toBe('https://synergyconnect.com.br/developers/n8n');
+		const links = JSON.stringify(credential.properties).match(/https?:\/\/[^"'\\<> ]+/g) ?? [];
+		expect(links.length).toBeGreaterThan(0);
+		for (const link of links) {
+			expect(link).toMatch(/^https:\/\/(api\.synergyconnect\.com\.br$|synergyconnect\.com\.br\/developers)/);
+		}
 	});
 
 	it('the test is a read: GET /v1/me. It never sends (E1-3)', () => {
@@ -90,10 +117,35 @@ describe('credential synergyConnectApi (§6.2)', () => {
 	});
 });
 
+describe('the icon', () => {
+	it('is the Synergy Connect symbol: square, the brand gradients, the same file in both nodes', () => {
+		expect(triggerIcon).toBe(actionIcon);
+		const [, , , width, height] = /viewBox="(\S+) (\S+) (\S+) (\S+)"/.exec(actionIcon) ?? [];
+		expect(Number(width)).toBeGreaterThan(0);
+		expect(width).toBe(height);
+		// the palette of the brand file (green → teal → blue)
+		for (const color of ['#7FD88B', '#4CB698', '#209DCC', '#1DA0D4']) expect(actionIcon).toContain(color);
+		// no bitmap, no script, nothing loaded from outside
+		expect(actionIcon).not.toMatch(/<image|<script|href=/);
+	});
+
+	it('the nodes and the credential use it', () => {
+		expect(new SynergyConnect().description.icon).toBe('file:synergyConnect.svg');
+		expect(new SynergyConnectTrigger().description.icon).toBe('file:synergyConnect.svg');
+		expect(new SynergyConnectApi().icon).toEqual({
+			light: 'file:../nodes/SynergyConnect/synergyConnect.svg',
+			dark: 'file:../nodes/SynergyConnect/synergyConnect.svg',
+		});
+	});
+});
+
 describe('the package (§6.6)', () => {
 	it('has the publication fields', () => {
 		expect(pkg.name).toBe('@synergyconnectapp/n8n-nodes-synergy-connect');
-		expect(pkg.version).toBe('1.0.1');
+		expect(pkg.version).toBe('1.0.2');
+		expect(lock.version).toBe(pkg.version);
+		expect(lock.packages[''].version).toBe(pkg.version);
+		expect(changelog).toContain(`#### ${pkg.version}\n`);
 		expect(pkg.author).toEqual({
 			name: 'Gabriel Augusto (Synergy Connect)',
 			email: 'gabriel@g2ngroup.com.br',

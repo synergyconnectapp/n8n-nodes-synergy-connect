@@ -46,7 +46,7 @@ const versionDescription: Omit<INodeTypeDescription, 'displayName' | 'name' | 'i
 			type: 'multiOptions',
 			required: true,
 			default: ['messages'],
-			description: 'The events to listen for. They are registered in Synergy, which only sends these.',
+			description: 'The events to listen for. They are registered in Synergy Connect, which only sends these.',
 			options: [
 				{ name: 'Account Alerts', value: 'account_alerts' },
 				{ name: 'Account Update', value: 'account_update' },
@@ -54,6 +54,7 @@ const versionDescription: Omit<INodeTypeDescription, 'displayName' | 'name' | 'i
 				{ name: 'Group Lifecycle', value: 'group_lifecycle_update' },
 				{ name: 'Group Participants', value: 'group_participant_update' },
 				{ name: 'Group Settings', value: 'group_settings_update' },
+				{ name: 'Journey Event', value: 'synergy_journeys', description: 'A milestone of a Journey: a run started, completed or ended, data was captured, a link was clicked' },
 				{ name: 'Message Echo', value: 'smb_message_echoes', description: 'A message sent from the WhatsApp Business app or the inbox' },
 				{ name: 'Message Received', value: 'messages', description: 'An incoming message from a customer' },
 				{ name: 'Message Status Update', value: 'statuses', description: 'Sent, delivered, read or failed' },
@@ -179,7 +180,7 @@ export class SynergyConnectTriggerV1 {
 		let deliveryId: string | null = null;
 
 		if (!entry) {
-			// No state for this URL: Synergy's proof ping, which arrives while create() is still running and is signed
+			// No state for this URL: the proof ping of the API, which arrives while create() is still running and is signed
 			// with a secret n8n does not have yet. A ping-only body does nothing, so it gets a 200; anything else is
 			// refused.
 			const body = parse() as { entry?: { changes?: { field?: unknown }[] }[] } | null;

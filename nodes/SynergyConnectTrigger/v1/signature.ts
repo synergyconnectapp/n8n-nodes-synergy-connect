@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 
 // devtools.md §2.10 and §6.4 (S-44, S-45). Fail-closed: anything that is not exactly the documented format is "invalid",
 // and the format and size are checked BEFORE the comparison. `verifySignature` never throws. The trigger only receives
-// Synergy's own deliveries, and every one carries X-Synergy-Signature: there is NO fallback to the untimed
+// the deliveries of the API, and every one carries X-Synergy-Signature: there is NO fallback to the untimed
 // X-Hub-Signature-256 (an attacker would strip the stronger header and replay a capture forever, RTF-02).
 
 export const TOLERANCE_SECONDS = 300;

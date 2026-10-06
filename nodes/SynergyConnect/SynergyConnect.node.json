@@ -4,6 +4,11 @@
 	"codexVersion": "1.0",
 	"categories": ["Communication"],
 	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://synergyconnect.com.br/developers/authentication"
+			}
+		],
 		"primaryDocumentation": [
 			{
 				"url": "https://synergyconnect.com.br/developers/n8n"

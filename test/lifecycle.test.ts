@@ -63,7 +63,7 @@ describe('create()', () => {
 		}
 	});
 
-	it('a stale entry is dropped before the call, so the proof ping of Synergy is answered without a secret', async () => {
+	it('a stale entry is dropped before the call, so the proof ping of the API is answered without a secret', async () => {
 		let during: unknown;
 		const handler = () => {
 			during = structuredClone(staticDataRef.hooks);
@@ -107,10 +107,10 @@ describe('create()', () => {
 		await expect(createHook(ctx, noWait)).rejects.toThrow(/refused the operation \(403\)/);
 	});
 
-	it('refuses a legacy or cleartext credential before any call (S-46)', async () => {
-		for (const baseUrl of ['https://legacy.synergyconnect.com.br/api/v1', 'http://api.synergyconnect.com.br']) {
+	it('refuses a credential with a path or in cleartext before any call (S-46)', async () => {
+		for (const baseUrl of ['https://api.synergyconnect.com.br/api/v1', 'http://api.synergyconnect.com.br']) {
 			const { ctx, calls } = hookContext({ handler: () => ({}), credentials: { apiKey: 'syn_x', baseUrl } });
-			await expect(createHook(ctx, noWait)).rejects.toThrow(/legacy Synergy API|must use https/);
+			await expect(createHook(ctx, noWait)).rejects.toThrow(/with no path|must use https/);
 			expect(calls).toHaveLength(0);
 		}
 	});
@@ -136,6 +136,7 @@ describe('checkExists()', () => {
 		expect(await checkExists(ctx, noWait)).toBe(true);
 		expect(calls[1].method).toBe('POST');
 		expect(calls[1].url).toBe('https://api.synergyconnect.com.br/v1/webhooks/hook-1/rotate-secret');
+		expect(calls[1].body).toBeUndefined();
 		expect(staticData.hooks).toEqual({ [HOOK_URL]: { id: 'hook-1', secret: 'e'.repeat(32) } });
 	});
 

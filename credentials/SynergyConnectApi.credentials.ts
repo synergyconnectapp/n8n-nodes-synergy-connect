@@ -24,7 +24,7 @@ export class SynergyConnectApi implements ICredentialType {
 			required: true,
 			placeholder: 'syn_your_api_key',
 			description:
-				'API key from Settings → Developer. The nodes need a <code>syn_…</code> key (scopes <code>messages</code> and <code>management</code>).',
+				'A <code>syn_…</code> key with the scopes <code>messages</code> and <code>management</code>. Create it in the Synergy Connect app: Configurações → API e webhooks → Chaves de API. See the <a href="https://synergyconnect.com.br/developers/authentication">authentication guide</a>.',
 		},
 		{
 			displayName: 'Base URL',
@@ -32,29 +32,30 @@ export class SynergyConnectApi implements ICredentialType {
 			type: 'string',
 			default: 'https://api.synergyconnect.com.br',
 			description:
-				'Base URL of the Synergy Connect API. Leave the default unless Synergy support gave you another one.',
+				'Address of the Synergy Connect API, https and with no path. Leave the default unless Synergy Connect support gave you another one.',
 		},
 		{
 			displayName: 'Phone Number ID',
 			name: 'phoneNumberId',
 			type: 'string',
 			default: '',
-			description: 'Default number, used when the node does not choose one',
+			placeholder: '106540352242922',
+			description:
+				'Default WhatsApp number of the nodes, used when a node does not choose one. It is the <code>phone_number_id</code> that <code>GET /v1/numbers</code> lists.',
 		},
 	];
 
-	// Both headers are sent: `Authorization: Bearer` and `x-api-key`.
+	// The API reads the key from `Authorization: Bearer` and from nowhere else (OpenAPI securitySchemes.ApiKey).
 	authenticate: IAuthenticateGeneric = {
 		type: 'generic',
 		properties: {
 			headers: {
 				Authorization: '=Bearer {{$credentials.apiKey}}',
-				'x-api-key': '={{$credentials.apiKey}}',
 			},
 		},
 	};
 
-	// Read-only: it never sends a message.
+	// Read-only (`getMe`): it never sends a message.
 	test: ICredentialTestRequest = {
 		request: {
 			baseURL:
