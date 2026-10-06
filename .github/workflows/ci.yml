@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # n8n-node (the build and lint tool) needs a newer Node than the package supports, so lint and build once on 24
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Actions are pinned by commit SHA (S-46): a moved tag can never change what runs here
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      # what would be published: dist, README, CHANGELOG and LICENSE
+      - run: npm pack --dry-run
+
+  # vitest runs the TypeScript sources directly (no dist and no n8n-node), so it needs no build and runs on every Node
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      # --ignore-scripts: the dev dependency isolated-vm compiles with node-gyp on install and fails on Node 20; vitest does not use it
+      - run: npm ci --ignore-scripts
+      # includes test/redteam
+      - run: npx vitest run

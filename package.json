@@ -1,0 +1,69 @@
+{
+	"name": "@synergyconnectapp/n8n-nodes-synergy-connect",
+	"version": "1.0.1",
+	"description": "n8n community nodes for Synergy Connect: WhatsApp messages, media, templates, flows and webhooks",
+	"keywords": [
+		"n8n-community-node-package",
+		"n8n",
+		"synergyconnectapp",
+		"synergy-connect",
+		"whatsapp",
+		"instagram",
+		"meta",
+		"automation"
+	],
+	"license": "MIT",
+	"homepage": "https://github.com/synergyconnectapp/n8n-nodes-synergy-connect",
+	"author": {
+		"name": "Gabriel Augusto (Synergy Connect)",
+		"email": "gabriel@g2ngroup.com.br",
+		"url": "https://github.com/synergyconnectapp"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/synergyconnectapp/n8n-nodes-synergy-connect.git"
+	},
+	"bugs": {
+		"url": "https://github.com/synergyconnectapp/n8n-nodes-synergy-connect/issues"
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"CHANGELOG.md",
+		"LICENSE"
+	],
+	"publishConfig": {
+		"access": "public",
+		"provenance": true
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lintfix": "n8n-node lint --fix",
+		"release": "n8n-node release",
+		"test": "vitest run",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/SynergyConnectApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/SynergyConnect/SynergyConnect.node.js",
+			"dist/nodes/SynergyConnectTrigger/SynergyConnectTrigger.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": ">=0.23.0",
+		"@types/node": "^25.3.5",
+		"n8n-workflow": "*",
+		"typescript": "~5.7.0",
+		"vitest": "^3.2.4"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	}
+}

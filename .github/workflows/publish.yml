@@ -1,0 +1,63 @@
+name: Publish to npm
+
+# A version tag (v1.0.0 or 1.0.0; `n8n-node release` tags without the `v`) publishes the package through the npm
+# Trusted Publisher of this repository: there is no npm token in the secrets, and the provenance comes from the OIDC
+# identity of this run. Every Action is pinned by the SHA of a commit (devtools.md §6.6, S-46): a tag can be moved, a
+# commit SHA cannot.
+#
+# One-time setup on npmjs.com (Packages → @synergyconnectapp/n8n-nodes-synergy-connect → Settings → Trusted publishing
+# → GitHub Actions): owner `synergyconnectapp`, repository `n8n-nodes-synergy-connect`, workflow `publish.yml`, allowed
+# action: direct publishing. The package page only exists after the first version is created (`npm stage publish`);
+# configure the Trusted Publisher then, and only when the tag is ready: an unvalidated configuration expires after
+# 48 hours.
+#
+# After the first release run `npx @n8n/scan-community-package @synergyconnectapp/n8n-nodes-synergy-connect` and submit the node at
+# https://creators.n8n.io/nodes.
+on:
+  push:
+    tags:
+      - 'v*'
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm Trusted Publisher (OIDC) and provenance
+    steps:
+      - name: Check out
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24 # npm >= 11.5.1 is required by Trusted Publishing
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false # never use caching in release builds
+
+      - name: Check the tag matches package.json
+        run: test "${GITHUB_REF_NAME#v}" = "$(node -p "require('./package.json').version")"
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npx vitest run && npx vitest run test/redteam
+
+      - name: Publish
+        # `prepublishOnly` (n8n-node prerelease) refuses a plain publish unless RELEASE_MODE is set, as `npm run release` does
+        run: npm publish --provenance --access public
+        env:
+          RELEASE_MODE: 'true'
